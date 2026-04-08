@@ -165,7 +165,6 @@ async def idle_animation_task():
             await asyncio.sleep(1)
 
 
-async def random_eye_movement(duration_ms):
     """
     在指定的时间内，让眼球/眼皮随机进行微小的位移
     :param duration_ms: 这个微动状态持续的总时间
@@ -196,7 +195,6 @@ async def random_eye_movement(duration_ms):
     # 持续时间结束后，强行把各个部位归零（回到绝对平静状态）
     reset_to_center(200)
 
-
 # ======= 3. 主事件循环调度器 =======
 async def main():
     # 将所有的独立任务丢入 uasyncio 的事件循环池（它们会自动轮流穿插运行）
@@ -207,8 +205,6 @@ async def main():
         
     asyncio.create_task(vofa.rx_task(servos)) # 挂载 VOFA 的串口接收协程
     asyncio.create_task(idle_animation_task())
-    #asyncio.create_task(random_eye_movement(10000))  # 让眼睛在前10秒内（待机）随机微动
-
     
     vofa.send("uasyncio 事件循环已启动！")
     
