@@ -1,0 +1,28 @@
+name,direction,最小角度,最大角度,静止角度,pin_id
+LEFT_Brow_L,
+LEFT_Brow_R,
+RIGHT_Brow_L,
+RIGHT_Brow_R,
+
+LEFT_Eye_U,
+LEFT_Eye_L,
+RIGHT_Eye_U,
+RIGHT_Eye_L,
+
+Mouth_L,
+Mouth_R,
+
+Mouth_RIGHT_IN,
+Mouth_RIGHT_Out,
+
+Mouth_Left_IN,
+Mouth_Left_Out,
+
+
+Jaw_L,
+Jaw_R,
+
+
+右边嘴角  里面=外面+6°才能同步
+
+左边嘴角  里面=外面+6°才能同步,direction均为-1
