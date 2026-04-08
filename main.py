@@ -64,7 +64,6 @@ def reset_to_center(duration_ms=1000):
 vofa.send("初始化完成，请将发送格式设置为: [舵机名称][角度],[持续时间]#")
 vofa.send("例如左眉毛左边的舵机,发送: LBL90.5#或LBL90.5,1000#")
 
-
 # ======= 1. 舵机平滑更新协程 (模拟 50FPS 刷新) =======
 async def servo_update_task():
     """以协程方式每 20ms 刷新一次所有舵机的位置 (Easing)"""
