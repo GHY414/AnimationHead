@@ -165,36 +165,6 @@ async def idle_animation_task():
             await asyncio.sleep(1)
 
 
-    """
-    在指定的时间内，让眼球/眼皮随机进行微小的位移
-    :param duration_ms: 这个微动状态持续的总时间
-    """
-    start_time = time.ticks_ms()
-    while time.ticks_diff(time.ticks_ms(), start_time) < duration_ms:
-        # 产生一个 -5度 到 +5度 的微小随机扰动
-        # 注意：不要偏离 0度 (平静状态) 太远
-        UandD_eye_offset = random.uniform(-10, 10)
-        RandL_eye_offset = random.uniform(-10, 10)
-        Brow_offset = random.uniform(-15, 15)
-        # 用较短的时间 (100~300ms) 快速平滑地移动过去，模拟真实眼球的跳视 (Saccade)
-        move_time = random.randint(500, 700)
-        servos["LBL"].SetTarget(100 + Brow_offset, duration_ms=move_time)
-        servos["LBR"].SetTarget(105 - Brow_offset, duration_ms=move_time)
-        servos["RBL"].SetTarget(100 - Brow_offset, duration_ms=move_time)
-        servos["RBR"].SetTarget(100 + Brow_offset, duration_ms=move_time)
-
-        servos["LEL"].SetTarget(90 + RandL_eye_offset, duration_ms=move_time)
-        servos["REL"].SetTarget(90 + RandL_eye_offset, duration_ms=move_time)
-        servos["LEU"].SetTarget(90 + UandD_eye_offset, duration_ms=move_time)
-        servos["REU"].SetTarget(90 + UandD_eye_offset, duration_ms=move_time)
-        
-        # 在下一次乱动前，停顿一段随机时间 (500~1500ms)
-        pause_time = random.randint(500, 700)
-        await asyncio.sleep_ms(pause_time)
-        
-    # 持续时间结束后，强行把各个部位归零（回到绝对平静状态）
-    reset_to_center(200)
-
 # ======= 3. 主事件循环调度器 =======
 async def main():
     # 将所有的独立任务丢入 uasyncio 的事件循环池（它们会自动轮流穿插运行）
