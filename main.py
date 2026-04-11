@@ -5,34 +5,42 @@ import uasyncio as asyncio
 import time
 import sys
 import random
+from machine import Pin
+from HDL_actuator import Actuator
+actuator = Actuator(21, 20)
 # 实例化 VOFA 串口通信对象
 vofa = Vofa(tx_pin=0, rx_pin=1, baudrate=115200)
+
+# 实例化 树莓派4B USB通信对象
+ras4b = Ras4B()
+
 servos = {
     # 眉毛 (限制角度 50~120)
-    "LBL": Servo(pin_id=4, limits=(20, 180)),
+    "LBL": Servo(pin_id=16, limits=(75, 160)),
     "LBR": Servo(pin_id=2, limits=(20, 180), direction=-1),
     
-    "RBL": Servo(pin_id=3, limits=(50, 180),direction=-1),
-    "RBR": Servo(pin_id=5, limits=(50, 180), direction=-1),
+    "RBL": Servo(pin_id=3, limits=(85, 125),direction=-1),
+    "RBR": Servo(pin_id=17, limits=(75, 160), direction=-1),
     
     # 眼睛 (默认初始化)
     "LEU": Servo(pin_id=14,limits=(75,105)),
-    "LEL": Servo(pin_id=10,limits=(75,105),direction=-1),
+    "LEL": Servo(pin_id=7,limits=(75,105),direction=-1),
     "REU": Servo(pin_id=15,limits=(75,105),direction=-1),
     "REL": Servo(pin_id=11,limits=(75,105),direction=-1),
     
     # 嘴部和下巴 (限制角度 20~180, 方向翻转)
-    "CL":  Servo(pin_id=8, limits=(20, 160), direction=-1),
-    "CR":  Servo(pin_id=9, limits=(20, 160)),
+    "CL":  Servo(pin_id=8, limits=(86, 102), direction=-1),
+    "CR":  Servo(pin_id=9, limits=(80, 93),direction=-1),
 
-    "MRI":  Servo(pin_id=23, limits=(20, 160), direction=-1),
-    "MRO":  Servo(pin_id=7, limits=(20, 160), direction=-1),
-    "MLI":  Servo(pin_id=22, limits=(20, 160), direction=-1),
-    "MLO":  Servo(pin_id=6, limits=(20, 160), direction=-1),
+    "MRI":  Servo(pin_id=26, limits=(100, 135), direction=1),
+    "MRO":  Servo(pin_id=10, limits=(100, 135), direction=1),
+    "MLI":  Servo(pin_id=22, limits=(100, 135), direction=-1),
+    "MLO":  Servo(pin_id=6, limits=(100, 135), direction=-1),
+
     
 
-    "JL":  Servo(pin_id=12, limits=(20, 160), direction=-1),
-    "JR":  Servo(pin_id=13, limits=(20, 160))
+    "JL":  Servo(pin_id=12, limits=(60, 105), direction=-1),
+    "JR":  Servo(pin_id=13, limits=(60, 100))
 }
 
 def reset_to_center(duration_ms=1000):
@@ -42,9 +50,9 @@ def reset_to_center(duration_ms=1000):
     :param duration_ms: 归中过程花费的过渡时间(毫秒)
     """
 
-    servos["LBL"].SetTarget(100, duration_ms)
-    servos["LBR"].SetTarget(105, duration_ms)
-    servos["RBL"].SetTarget(100, duration_ms)
+    servos["LBL"].SetTarget(90, duration_ms)
+    servos["LBR"].SetTarget(90, duration_ms)
+    servos["RBL"].SetTarget(90, duration_ms)
  
     servos["LEU"].SetTarget(90, duration_ms)
     servos["LEL"].SetTarget(90, duration_ms)
@@ -93,9 +101,9 @@ async def idle_animation_task():
                     all_reached = False
                     break
                     
-            # 距离上位机最后一次下发串口命令过了多久
-            # 如果是刚上电没有指令，由于 HDL_vofa.py 里把初始时间减了 10000，这里就会是 > 10000
-            elapsed_since_cmd = time.ticks_diff(time.ticks_ms(), vofa.last_cmd_time)
+            # 距离上位机最后一次下发命令过了多久
+            last_cmd_time = max(vofa.last_cmd_time, ras4b.last_cmd_time)
+            elapsed_since_cmd = time.ticks_diff(time.ticks_ms(), last_cmd_time)
             
             # ================= 2. 串口处于高频控制期间 =================
             # 只要上位机还在持续发数据(如不到1秒前刚发过)，或者舵机还在朝上位机位置运动，就挂起不干预
@@ -108,10 +116,10 @@ async def idle_animation_task():
             if not is_idle_mode and all_reached:
                 # 这说明上位机刚刚停发指令，并且脸部动作停稳了。现在我们要它在原地停留 3 秒
                 interrupted = False
-                # 利用 30次 * 0.1秒 = 3秒 的分片休眠法，期间如果突然又来串口指令了，可以极速打破这个 3 秒等待
-                for _ in range(30):
+                # 利用 15次 * 0.1秒 = 1.5秒 的分片休眠法，期间如果突然又来串口指令了，可以极速打破这个 3 秒等待
+                for _ in range(15):
                     await asyncio.sleep(0.1)
-                    if time.ticks_diff(time.ticks_ms(), vofa.last_cmd_time) < 1000:
+                    if time.ticks_diff(time.ticks_ms(), max(vofa.last_cmd_time, ras4b.last_cmd_time)) < 1000:
                         interrupted = True
                         break
                         
@@ -124,7 +132,7 @@ async def idle_animation_task():
                 # 开始为各个特征区域设定平滑的自动归中命令，例如花 1 秒钟统一回到基准0位
                 reset_to_center(1000)
                 
-                await asyncio.sleep(1.2) # 耐心等待 1.2 秒让身体完成上面设定的 1.0 秒归中动作
+                await asyncio.sleep(1.0) # 耐心等待 1.0 秒让身体完成上面设定的 1.0 秒归中动作
                 
                 # 宣布正式进入无人接管的待机动画(固定动作)死循环环节
                 is_idle_mode = True
@@ -136,6 +144,7 @@ async def idle_animation_task():
                 UandD_eye_offset = random.uniform(-10, 10)
                 RandL_eye_offset = random.uniform(-10, 10)
                 Brow_offset = random.uniform(-15, 15)
+                Cheek_offset = random.uniform(-5, 5)
                 
                 # 快速且平滑地移动过去
                 move_time = random.randint(500, 700)
@@ -155,7 +164,7 @@ async def idle_animation_task():
                 sleep_steps = max(1, pause_time // 100)
                 for _ in range(sleep_steps):
                     await asyncio.sleep(0.1)
-                    if time.ticks_diff(time.ticks_ms(), vofa.last_cmd_time) < 1000:
+                    if time.ticks_diff(time.ticks_ms(), max(vofa.last_cmd_time, ras4b.last_cmd_time)) < 1000:
                         is_idle_mode = False # 一旦被打断，立刻解除待机状态并进入下一次主循环
                         break
                         
@@ -171,9 +180,10 @@ async def main():
     asyncio.create_task(servo_update_task())
     
     # 程序刚开始时，让所有特定舵机统一归位到指定中立角度
-    reset_to_center(1000)
+    #reset_to_center(1000)
         
     asyncio.create_task(vofa.rx_task(servos)) # 挂载 VOFA 的串口接收协程
+    asyncio.create_task(ras4b.rx_task(servos)) # 挂载 树莓派 USB 的接收协程
     asyncio.create_task(idle_animation_task())
     
     vofa.send("uasyncio 事件循环已启动！")

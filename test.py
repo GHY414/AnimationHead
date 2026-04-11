@@ -1,5 +1,7 @@
 import time
+from machine import Pin
 from HDL_actuator import Actuator
+#初始点亮pico25引脚的LED
 
 # 初始化推杆电机对象，控制引脚为 17 和 16
 my_actuator = Actuator(17, 16)
@@ -27,7 +29,8 @@ def test_actuator():
 
 if __name__ == "__main__":
     try:
-        test_actuator()
+        while True:
+            test_actuator()
     except KeyboardInterrupt:
         # 遇Ctrl+C强制停止，防止危险
         my_actuator.stop()

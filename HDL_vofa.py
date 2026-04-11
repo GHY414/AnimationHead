@@ -56,7 +56,7 @@ class Vofa:
                                     
                                     servos[found_cmd].SetTarget(angle, duration_ms=duration_ms)  # 设置目标角度，持续时间由串口决定
                                     self.last_cmd_time = time.ticks_ms()  # 记录最近一次接收到有效指令的时间
-                                    
+                                    #print(f"收到 VOFA+ 指令: {found_cmd} -> 角度: {angle}, 过渡时间: {duration_ms}ms")
                                     # 打印各个舵机的当前角度
                                     status_list = [f'"{k}": {v.angle:.1f}' for k, v in servos.items()]
                                     self.send("NowAngle_Servos: " + ", ".join(status_list))
