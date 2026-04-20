@@ -29,7 +29,15 @@ class Ras4B:
         while True:
             if self.poller.poll(0):
                 # 读取全部缓冲区的字符
-                char = sys.stdin.read(1)
+                try:
+                    char = sys.stdin.read(1)
+                except UnicodeError:
+                    # 忽略不合法的 UTF-8 字符/乱码引起的异常
+                    continue
+                except Exception as e:
+                    print(f"USB Read Error: {e}")
+                    continue
+
                 if char:
                     self.buffer += char
                     

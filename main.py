@@ -157,6 +157,8 @@ async def idle_animation_task():
                 servos["REL"].SetTarget(90 + RandL_eye_offset, duration_ms=move_time)
                 servos["LEU"].SetTarget(90 + UandD_eye_offset, duration_ms=move_time)
                 servos["REU"].SetTarget(90 + UandD_eye_offset, duration_ms=move_time)
+
+                
                 
                 # 停顿一段随机时间 (500~1500ms)
                 # 使用分片休眠响应串口指令进行极速打断
@@ -184,7 +186,7 @@ async def main():
         
     asyncio.create_task(vofa.rx_task(servos)) # 挂载 VOFA 的串口接收协程
     asyncio.create_task(ras4b.rx_task(servos)) # 挂载 树莓派 USB 的接收协程
-    asyncio.create_task(idle_animation_task())
+    #asyncio.create_task(idle_animation_task())
     
     vofa.send("uasyncio 事件循环已启动！")
     
